@@ -9,6 +9,7 @@ import pygame
 from game.constants import ENEMY_DATA, LEVELS
 from game.gameplay import Game
 from game.maps import LevelMap
+from game.audio import AudioManager
 
 
 class SilentAudio:
@@ -90,6 +91,14 @@ class GameRequirementsTests(unittest.TestCase):
         pickup.rect.center = game.player.rect.center
         game.collect()
         self.assertIn(pickup, game.pickups)
+
+    def test_original_audio_assets_exist_and_load(self):
+        audio = AudioManager(0)
+        self.assertTrue(audio.available)
+        self.assertEqual(len(audio.music), 5)
+        self.assertEqual(set(("shot", "swing", "hurt", "enemy_dead", "pickup",
+                              "door", "switch", "victory", "gameover")),
+                         set(audio.sounds))
 
 
 if __name__ == "__main__":
