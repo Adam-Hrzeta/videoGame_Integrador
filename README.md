@@ -51,3 +51,7 @@ Desde el menú principal puedes ajustar volumen, resolución, distribución de c
 - `tests/`: pruebas automáticas
 
 Los mapas están hechos con el formato TMX de Tiled y se cargan en ejecución mediante pytmx. Para editarlos, abre los archivos de `assets/maps/` en Tiled Map Editor.
+
+## Sonido
+
+La banda sonora y los efectos son composiciones originales generadas en el proyecto como archivos WAV. Cinco temas tienen identidad distinta y se reproducen según la zona. No utiliza pistas comerciales ni requiere conexión a internet.

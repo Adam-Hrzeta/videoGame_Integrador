@@ -27,6 +27,7 @@ def draw_text(surface, text, x, y, size=22, color=TEXT, bold=False, center=False
 def draw_hud(surface, game):
     width = surface.get_width()
     pygame.draw.rect(surface, (13, 17, 26, 235), (0, 0, width, 78))
+    pygame.draw.line(surface, (65, 98, 104), (0, 77), (width, 77), 1)
     draw_text(surface, "VIDA", 18, 9, 14, MUTED, True)
     for i in range(game.player.max_health):
         color = (237, 98, 111) if i < game.player.health else (76, 80, 90)

@@ -65,12 +65,26 @@ def set_screen(size):
 
 
 def render_menu(screen, options, selected, title, subtitle=None):
-    screen.fill((13, 18, 27))
     width, height = screen.get_size()
-    for i in range(34):
-        x = (i * 197 + 35) % width
-        y = (i * 113 + 23) % height
-        pygame.draw.circle(screen, (37, 49, 62), (x, y), 1 + (i % 2))
+    background = pygame.Surface((width, height))
+    for y in range(height):
+        ratio = y / max(1, height - 1)
+        color = (
+            int(9 + 12 * ratio),
+            int(14 + 21 * ratio),
+            int(24 + 25 * ratio),
+        )
+        pygame.draw.line(background, color, (0, y), (width, y))
+    screen.blit(background, (0, 0))
+    horizon = height // 2 - 40
+    pygame.draw.line(screen, (63, 91, 101), (0, horizon), (width, horizon), 1)
+    for i in range(26):
+        x = (i * 193 + pygame.time.get_ticks() // 90) % (width + 100) - 50
+        y = (i * 97 + 53) % max(100, horizon)
+        alpha = 70 + (i % 4) * 25
+        dot = pygame.Surface((4, 4), pygame.SRCALPHA)
+        dot.fill((160, 228, 208, alpha))
+        screen.blit(dot, (x, y))
     draw_text(screen, "ECOS DEL", width // 2, max(75, height // 5), 27, (205, 217, 208), True, True)
     draw_text(screen, "UMBRAL", width // 2, max(127, height // 5 + 51), 54, ACCENT, True, True)
     if subtitle:
@@ -163,9 +177,15 @@ def main():
                                 running = False
                 elif mode == "settings":
                     lines = options_labels(settings)
-                    for i, rect in enumerate(draw_panel(screen, "CONFIGURACIÓN", lines, option_selection, "← / → para cambiar")):
+                    rects = draw_panel(screen, "CONFIGURACIÓN", lines, option_selection, "← / → para cambiar")
+                    for i, rect in enumerate(rects):
                         if rect.collidepoint(event.pos):
                             option_selection = i
+                            if i < 4:
+                                adjust_option(settings, i, 1 if event.pos[0] >= rect.centerx else -1)
+                                audio.set_volume(settings["volume"])
+                                if i == 1:
+                                    screen = set_screen(settings["resolution"])
                 elif mode == "paused":
                     choices = ("Continuar", "Inventario", "Configuración", "Volver al menú")
                     for i, rect in enumerate(draw_panel(screen, "PAUSA", choices, menu_selection)):
