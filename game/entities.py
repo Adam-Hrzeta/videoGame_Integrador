@@ -1,11 +1,35 @@
 import math
 from functools import lru_cache
+from pathlib import Path
 
 import pygame
 
 from .constants import ENEMY_DATA, ITEM_DATA, TILE_SIZE
 
 ACTOR_SIZE = 48
+PLAYER_FRAMES = (100, 64)
+PLAYER_ASSETS = Path(__file__).resolve().parents[1] / "assets" / "sprites" / "player"
+PLAYER_ANIMATIONS = {
+    "idle": ("player.png", 7),
+    "walk": ("Walking_KG_2.png", 7),
+    "attack": ("Attack_KG_1.png", 6),
+    "shoot": ("Attack_KG_3.png", 9),
+    "hurt": ("player.png", 7),
+    "death": ("Dying_KG_1.png", 5),
+}
+
+
+@lru_cache(maxsize=8)
+def player_frames(state):
+    filename, frame_count = PLAYER_ANIMATIONS.get(state, PLAYER_ANIMATIONS["idle"])
+    sheet = pygame.image.load(str(PLAYER_ASSETS / filename)).convert_alpha()
+    frame_width, frame_height = PLAYER_FRAMES
+    if sheet.get_size() != (frame_width * frame_count, frame_height):
+        raise ValueError("La hoja de animación del jugador tiene dimensiones inesperadas: %s" % filename)
+    return tuple(
+        sheet.subsurface((index * frame_width, 0, frame_width, frame_height)).copy()
+        for index in range(frame_count)
+    )
 
 
 @lru_cache(maxsize=256)
@@ -14,49 +38,39 @@ def actor_image(kind, state, frame, facing):
     bob = (0, -2, 0, 2)[frame % 4] if state in ("walk", "attack") else (0, 1, 0, -1)[frame % 4]
     cx = ACTOR_SIZE // 2 + (3 if state == "attack" else 0)
     pygame.draw.ellipse(image, (14, 18, 22, 100), (8, 36, 32, 8))
-    if kind == "player":
-        body = (62, 172, 153) if state != "hurt" else (255, 104, 100)
-        pygame.draw.polygon(image, (50, 84, 99), [(cx - 12, 21 + bob), (cx + 11, 20 + bob), (cx + 16, 40), (cx - 17, 40)])
-        pygame.draw.ellipse(image, body, (cx - 10, 11 + bob, 20, 20))
-        pygame.draw.polygon(image, (30, 45, 59), [(cx - 11, 16 + bob), (cx, 3 + bob), (cx + 11, 16 + bob)])
-        pygame.draw.circle(image, (244, 215, 164), (cx + (5 if facing > 0 else -5), 19 + bob), 2)
-        if state in ("attack", "shoot"):
-            pygame.draw.line(image, (224, 231, 220), (cx + facing * 10, 27 + bob), (cx + facing * 23, 18 + bob), 3)
-            pygame.draw.circle(image, (120, 213, 230), (cx + facing * 23, 18 + bob), 3)
+    color = ENEMY_DATA[kind]["color"]
+    if state == "hurt":
+        color = (255, 111, 105)
+    elif state == "death":
+        color = tuple(max(25, int(c * 0.55)) for c in color)
+    if kind == "slime":
+        pygame.draw.ellipse(image, color, (cx - 15, 17 + bob, 30, 22 - (frame % 2) * 2))
+        pygame.draw.circle(image, (241, 247, 218), (cx + facing * 6, 25 + bob), 3)
+        pygame.draw.circle(image, (34, 49, 45), (cx + facing * 7, 25 + bob), 1)
+        pygame.draw.arc(image, (198, 246, 186), (cx - 7, 20 + bob, 13, 12), 0.2, 2.5, 2)
+    elif kind == "wraith":
+        pygame.draw.polygon(image, color, [(cx - 12, 38), (cx - 9, 15 + bob), (cx, 8 + bob), (cx + 11, 15 + bob), (cx + 13, 37), (cx + 6, 33), (cx, 38), (cx - 6, 33)])
+        pygame.draw.ellipse(image, (224, 245, 255), (cx - 7, 19 + bob, 5, 3))
+        pygame.draw.ellipse(image, (224, 245, 255), (cx + 3, 19 + bob, 5, 3))
     else:
-        color = ENEMY_DATA[kind]["color"]
-        if state == "hurt":
-            color = (255, 111, 105)
-        elif state == "death":
-            color = tuple(max(25, int(c * 0.55)) for c in color)
-        if kind == "slime":
-            pygame.draw.ellipse(image, color, (cx - 15, 17 + bob, 30, 22 - (frame % 2) * 2))
-            pygame.draw.circle(image, (241, 247, 218), (cx + facing * 6, 25 + bob), 3)
-            pygame.draw.circle(image, (34, 49, 45), (cx + facing * 7, 25 + bob), 1)
-            pygame.draw.arc(image, (198, 246, 186), (cx - 7, 20 + bob, 13, 12), 0.2, 2.5, 2)
-        elif kind == "wraith":
-            pygame.draw.polygon(image, color, [(cx - 12, 38), (cx - 9, 15 + bob), (cx, 8 + bob), (cx + 11, 15 + bob), (cx + 13, 37), (cx + 6, 33), (cx, 38), (cx - 6, 33)])
-            pygame.draw.ellipse(image, (224, 245, 255), (cx - 7, 19 + bob, 5, 3))
-            pygame.draw.ellipse(image, (224, 245, 255), (cx + 3, 19 + bob, 5, 3))
-        else:
-            pygame.draw.rect(image, (59, 49, 52), (cx - 11, 26 + bob, 8, 13))
-            pygame.draw.rect(image, (59, 49, 52), (cx + 3, 26 + bob, 8, 13))
-            pygame.draw.rect(image, color, (cx - 13, 17 + bob, 26, 17), border_radius=5)
-            pygame.draw.circle(image, color, (cx, 13 + bob), 10)
-            pygame.draw.circle(image, (243, 211, 154), (cx + facing * 5, 14 + bob), 2)
-            if kind == "skeleton":
-                pygame.draw.polygon(image, (230, 219, 180), [(cx - 9, 6 + bob), (cx - 6, 1 + bob), (cx - 2, 8 + bob)])
-                pygame.draw.line(image, (241, 236, 218), (cx - 7, 25 + bob), (cx + 8, 25 + bob), 2)
-            elif kind == "brute":
-                pygame.draw.circle(image, (98, 54, 51), (cx - 14, 24 + bob), 6)
-                pygame.draw.circle(image, (98, 54, 51), (cx + 14, 24 + bob), 6)
-                pygame.draw.rect(image, (239, 191, 118), (cx - 5, 22 + bob, 10, 3))
-            elif kind == "mage":
-                pygame.draw.polygon(image, (86, 54, 129), [(cx - 13, 14 + bob), (cx, 0 + bob), (cx + 13, 14 + bob)])
-                pygame.draw.line(image, (232, 207, 135), (cx + 12, 23 + bob), (cx + 16, 38), 3)
-                pygame.draw.circle(image, (112, 221, 255), (cx + 12, 20 + bob), 4)
-        if state == "attack":
-            pygame.draw.arc(image, (245, 204, 139), (cx + facing * 5 - 8, 12 + bob, 28, 27), 3.8 if facing > 0 else 0.7, 5.7 if facing > 0 else 2.4, 2)
+        pygame.draw.rect(image, (59, 49, 52), (cx - 11, 26 + bob, 8, 13))
+        pygame.draw.rect(image, (59, 49, 52), (cx + 3, 26 + bob, 8, 13))
+        pygame.draw.rect(image, color, (cx - 13, 17 + bob, 26, 17), border_radius=5)
+        pygame.draw.circle(image, color, (cx, 13 + bob), 10)
+        pygame.draw.circle(image, (243, 211, 154), (cx + facing * 5, 14 + bob), 2)
+        if kind == "skeleton":
+            pygame.draw.polygon(image, (230, 219, 180), [(cx - 9, 6 + bob), (cx - 6, 1 + bob), (cx - 2, 8 + bob)])
+            pygame.draw.line(image, (241, 236, 218), (cx - 7, 25 + bob), (cx + 8, 25 + bob), 2)
+        elif kind == "brute":
+            pygame.draw.circle(image, (98, 54, 51), (cx - 14, 24 + bob), 6)
+            pygame.draw.circle(image, (98, 54, 51), (cx + 14, 24 + bob), 6)
+            pygame.draw.rect(image, (239, 191, 118), (cx - 5, 22 + bob, 10, 3))
+        elif kind == "mage":
+            pygame.draw.polygon(image, (86, 54, 129), [(cx - 13, 14 + bob), (cx, 0 + bob), (cx + 13, 14 + bob)])
+            pygame.draw.line(image, (232, 207, 135), (cx + 12, 23 + bob), (cx + 16, 38), 3)
+            pygame.draw.circle(image, (112, 221, 255), (cx + 12, 20 + bob), 4)
+    if state == "attack":
+        pygame.draw.arc(image, (245, 204, 139), (cx + facing * 5 - 8, 12 + bob, 28, 27), 3.8 if facing > 0 else 0.7, 5.7 if facing > 0 else 2.4, 2)
     if facing < 0:
         image = pygame.transform.flip(image, True, False)
     return image
@@ -179,6 +193,7 @@ class Player(pygame.sprite.Sprite):
                     self.inventory[item] -= 1
                     break
             if self.lives <= 0:
+                self.state = "death"
                 game.finish(False)
             else:
                 self.health = self.max_health
@@ -209,9 +224,18 @@ class Player(pygame.sprite.Sprite):
         game.notice("%s utilizado." % ITEM_DATA[item]["name"], 2)
 
     def draw(self, surface, camera):
-        frame = int(self.anim_time * 9) % 4
-        image = actor_image("player", self.state, frame, self.facing).copy()
-        dest = image.get_rect(center=(round(self.rect.centerx - camera.x), round(self.rect.centery - camera.y)))
+        frames = player_frames(self.state)
+        fps = 12 if self.state == "walk" else 24
+        frame_index = 0 if self.state in ("idle", "hurt") else int(self.anim_time * fps) % len(frames)
+        image = frames[frame_index].copy()
+        if self.state == "hurt":
+            image.fill((255, 128, 128, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        if self.facing < 0:
+            image = pygame.transform.flip(image, True, False)
+        dest = image.get_rect(midbottom=(
+            round(self.rect.centerx - camera.x),
+            round(self.rect.bottom - camera.y),
+        ))
         if self.invulnerable > 0 and int(self.anim_time * 18) % 2:
             image.set_alpha(110)
         surface.blit(image, dest)

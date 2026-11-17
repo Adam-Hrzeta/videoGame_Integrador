@@ -46,11 +46,16 @@ Desde el menú principal puedes ajustar volumen, resolución, distribución de c
 - `main.py`: inicio y bucle principal
 - `game/`: jugador, enemigos, mapas, interfaz, audio y estado global
 - `assets/maps/`: cinco mapas `.tmx` editables en Tiled
-- `assets/tileset.png`: atlas de tiles usado por los mapas
-- `tools/build_maps.py`: reconstruye los cinco mapas TMX
+- `assets/tilesets/`: atlas y definiciones Tiled para bosque, desierto, catacumbas, pantano y Umbral
+- `assets/sprites/player/`: hojas de animación del personaje
+- `tools/build_maps.py`: reconstruye los atlas y los cinco mapas TMX
 - `tests/`: pruebas automáticas
 
 Los mapas están hechos con el formato TMX de Tiled y se cargan en ejecución mediante pytmx. Para editarlos, abre los archivos de `assets/maps/` en Tiled Map Editor.
+
+## Arte visual
+
+El jugador utiliza las hojas de sprites de `JUEGO2` para caminar, atacar, disparar, recibir daño y morir. Cada nivel tiene un trazado, paleta y tileset propios; los atlas se generan desde las imágenes fuente incluidas en `assets/tilesets/source/`. El tileset Tiny Dungeon de Kenney se distribuye bajo licencia CC0; se incluye su licencia junto a las fuentes.
 
 ## Sonido
 

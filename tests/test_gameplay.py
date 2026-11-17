@@ -1,5 +1,6 @@
 import os
 import unittest
+from collections import deque
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -7,6 +8,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import pygame
 
 from game.constants import ENEMY_DATA, LEVELS
+from game.entities import player_frames
 from game.gameplay import Game
 from game.maps import LevelMap
 from game.audio import AudioManager
@@ -43,6 +45,47 @@ class GameRequirementsTests(unittest.TestCase):
             patrols.update(enemy.patrol for enemy in level.enemies)
         self.assertEqual(species, set(ENEMY_DATA))
         self.assertEqual(patrols, {"pingpong", "waypoints", "fsm"})
+
+    def test_campaign_maps_have_distinct_themes_and_layouts(self):
+        themes = set()
+        layouts = set()
+        for number in range(1, len(LEVELS) + 1):
+            level = LevelMap(number)
+            themes.add(level.tmx.tilesets[0].name)
+            layouts.add(frozenset((wall.x, wall.y) for wall in level.solids))
+        self.assertEqual(len(themes), len(LEVELS))
+        self.assertEqual(len(layouts), len(LEVELS))
+
+    def test_every_map_has_a_walkable_route_from_spawn_to_door(self):
+        for number in range(1, len(LEVELS) + 1):
+            level = LevelMap(number)
+            tile_width, tile_height = level.tmx.tilewidth, level.tmx.tileheight
+            start = (level.spawn[0] // tile_width, level.spawn[1] // tile_height)
+            target = (level.door.rect.centerx // tile_width, level.door.rect.centery // tile_height)
+            queue = deque([start])
+            reached = {start}
+            while queue:
+                x, y = queue.popleft()
+                for next_cell in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    nx, ny = next_cell
+                    if not (0 <= nx < level.tmx.width and 0 <= ny < level.tmx.height):
+                        continue
+                    if next_cell in reached:
+                        continue
+                    rect = pygame.Rect(
+                        nx * tile_width + 4, ny * tile_height + 4,
+                        tile_width - 8, tile_height - 8,
+                    )
+                    if not level.collides(rect):
+                        reached.add(next_cell)
+                        queue.append(next_cell)
+            self.assertIn(target, reached, "El nivel %d no conecta el inicio con la puerta." % number)
+
+    def test_player_uses_the_supplied_animated_sprite_sheets(self):
+        self.assertEqual(len(player_frames("walk")), 7)
+        self.assertEqual(len(player_frames("attack")), 6)
+        self.assertEqual(len(player_frames("shoot")), 9)
+        self.assertEqual(len(player_frames("death")), 5)
 
     def test_key_door_requires_cleared_level_and_consumes_key(self):
         game = Game(SilentAudio())
