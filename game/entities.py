@@ -1,4 +1,3 @@
-import json
 import math
 from functools import lru_cache
 from pathlib import Path
@@ -8,79 +7,62 @@ import pygame
 from .constants import ENEMY_DATA, ITEM_DATA, TILE_SIZE
 from .item_icons import draw_item_icon, draw_item_label
 
-ACTOR_SIZE = 48
 PLAYER_FRAME_SIZE = (96, 96)
-PLAYER_ASSETS = Path(__file__).resolve().parents[1] / "assets" / "sprites" / "player" / "hooded-blade"
+ENEMY_FRAME_SIZE = (72, 72)
+SPRITE_ASSETS = Path(__file__).resolve().parents[1] / "assets" / "sprites"
+PLAYER_ASSETS = SPRITE_ASSETS / "player" / "samurai"
 PLAYER_ANIMATIONS = {
-    "idle": "hooded-blade-idle",
-    "walk": "hooded-blade-run",
-    "attack": "hooded-blade-attack",
-    "shoot": "hooded-blade-attack",
-    "jump": "hooded-blade-jump",
-    "hurt": "hooded-blade-idle",
-    "death": "hooded-blade-jump",
+    "idle": "Idle",
+    "walk": "Run",
+    "attack": "Attack_1",
+    "shoot": "Attack_2",
+    "jump": "Jump",
+    "hurt": "Hurt",
+    "death": "Dead",
+}
+ENEMY_SPRITES = {
+    "slime": "skeleton-archer",
+    "wraith": "lightning-mage",
+    "skeleton": "skeleton-warrior",
+    "brute": "skeleton-spearman",
+    "mage": "fire-wizard",
+}
+ENEMY_ANIMATIONS = {
+    "idle": "Idle",
+    "walk": "Run",
+    "attack": "Attack_1",
+    "shoot": "Attack_2",
+    "hurt": "Hurt",
+    "death": "Dead",
 }
 
 
-@lru_cache(maxsize=8)
-def player_frames(state):
-    name = PLAYER_ANIMATIONS.get(state, PLAYER_ANIMATIONS["idle"])
-    with (PLAYER_ASSETS / (name + ".json")).open(encoding="utf-8") as animation_file:
-        metadata = json.load(animation_file)
-    sheet = pygame.image.load(str(PLAYER_ASSETS / (name + ".png"))).convert_alpha()
-    if sheet.get_size() != (metadata["meta"]["size"]["w"], metadata["meta"]["size"]["h"]):
-        raise ValueError("La hoja de animación del jugador tiene dimensiones inesperadas: %s.png" % name)
+@lru_cache(maxsize=64)
+def _sprite_frames(folder, name, frame_size, output_size):
+    sheet = pygame.image.load(str(Path(folder) / (name + ".png"))).convert_alpha()
+    frame_width, frame_height = frame_size
+    if sheet.get_height() != frame_height or sheet.get_width() % frame_width:
+        raise ValueError("La hoja de animación tiene dimensiones inesperadas: %s.png" % name)
     return tuple(
-        pygame.transform.smoothscale(
-            sheet.subsurface((frame["x"], frame["y"], frame["w"], frame["h"])),
-            PLAYER_FRAME_SIZE,
+        pygame.transform.scale(
+            sheet.subsurface((x, 0, frame_width, frame_height)),
+            output_size,
         )
-        for _, frame in sorted(metadata["frames"].items(), key=lambda item: int(item[0]))
+        for x in range(0, sheet.get_width(), frame_width)
     )
 
 
-@lru_cache(maxsize=256)
-def actor_image(kind, state, frame, facing):
-    image = pygame.Surface((ACTOR_SIZE, ACTOR_SIZE), pygame.SRCALPHA)
-    bob = (0, -2, 0, 2)[frame % 4] if state in ("walk", "attack") else (0, 1, 0, -1)[frame % 4]
-    cx = ACTOR_SIZE // 2 + (3 if state == "attack" else 0)
-    pygame.draw.ellipse(image, (14, 18, 22, 100), (8, 36, 32, 8))
-    color = ENEMY_DATA[kind]["color"]
-    if state == "hurt":
-        color = (255, 111, 105)
-    elif state == "death":
-        color = tuple(max(25, int(c * 0.55)) for c in color)
-    if kind == "slime":
-        pygame.draw.ellipse(image, color, (cx - 15, 17 + bob, 30, 22 - (frame % 2) * 2))
-        pygame.draw.circle(image, (241, 247, 218), (cx + facing * 6, 25 + bob), 3)
-        pygame.draw.circle(image, (34, 49, 45), (cx + facing * 7, 25 + bob), 1)
-        pygame.draw.arc(image, (198, 246, 186), (cx - 7, 20 + bob, 13, 12), 0.2, 2.5, 2)
-    elif kind == "wraith":
-        pygame.draw.polygon(image, color, [(cx - 12, 38), (cx - 9, 15 + bob), (cx, 8 + bob), (cx + 11, 15 + bob), (cx + 13, 37), (cx + 6, 33), (cx, 38), (cx - 6, 33)])
-        pygame.draw.ellipse(image, (224, 245, 255), (cx - 7, 19 + bob, 5, 3))
-        pygame.draw.ellipse(image, (224, 245, 255), (cx + 3, 19 + bob, 5, 3))
-    else:
-        pygame.draw.rect(image, (59, 49, 52), (cx - 11, 26 + bob, 8, 13))
-        pygame.draw.rect(image, (59, 49, 52), (cx + 3, 26 + bob, 8, 13))
-        pygame.draw.rect(image, color, (cx - 13, 17 + bob, 26, 17), border_radius=5)
-        pygame.draw.circle(image, color, (cx, 13 + bob), 10)
-        pygame.draw.circle(image, (243, 211, 154), (cx + facing * 5, 14 + bob), 2)
-        if kind == "skeleton":
-            pygame.draw.polygon(image, (230, 219, 180), [(cx - 9, 6 + bob), (cx - 6, 1 + bob), (cx - 2, 8 + bob)])
-            pygame.draw.line(image, (241, 236, 218), (cx - 7, 25 + bob), (cx + 8, 25 + bob), 2)
-        elif kind == "brute":
-            pygame.draw.circle(image, (98, 54, 51), (cx - 14, 24 + bob), 6)
-            pygame.draw.circle(image, (98, 54, 51), (cx + 14, 24 + bob), 6)
-            pygame.draw.rect(image, (239, 191, 118), (cx - 5, 22 + bob, 10, 3))
-        elif kind == "mage":
-            pygame.draw.polygon(image, (86, 54, 129), [(cx - 13, 14 + bob), (cx, 0 + bob), (cx + 13, 14 + bob)])
-            pygame.draw.line(image, (232, 207, 135), (cx + 12, 23 + bob), (cx + 16, 38), 3)
-            pygame.draw.circle(image, (112, 221, 255), (cx + 12, 20 + bob), 4)
-    if state == "attack":
-        pygame.draw.arc(image, (245, 204, 139), (cx + facing * 5 - 8, 12 + bob, 28, 27), 3.8 if facing > 0 else 0.7, 5.7 if facing > 0 else 2.4, 2)
-    if facing < 0:
-        image = pygame.transform.flip(image, True, False)
-    return image
+def player_frames(state):
+    name = PLAYER_ANIMATIONS.get(state, PLAYER_ANIMATIONS["idle"])
+    return _sprite_frames(str(PLAYER_ASSETS), name, (128, 128), PLAYER_FRAME_SIZE)
+
+
+def enemy_frames(kind, state):
+    folder = SPRITE_ASSETS / "enemies" / ENEMY_SPRITES[kind]
+    name = ENEMY_ANIMATIONS.get(state, ENEMY_ANIMATIONS["idle"])
+    if not (folder / (name + ".png")).is_file():
+        name = "Walk" if name == "Run" else "Attack_1"
+    return _sprite_frames(str(folder), name, (128, 128), ENEMY_FRAME_SIZE)
 
 
 class Projectile:
@@ -240,10 +222,8 @@ class Player(pygame.sprite.Sprite):
 
     def draw(self, surface, camera):
         frames = player_frames(self.state)
-        fps = {"idle": 4, "walk": 14, "attack": 20, "shoot": 20, "jump": 14}.get(self.state, 12)
-        if self.state == "hurt":
-            frame_index = 0
-        elif self.state == "death":
+        fps = {"idle": 6, "walk": 12, "attack": 16, "shoot": 16, "jump": 14}.get(self.state, 12)
+        if self.state == "death":
             frame_index = len(frames) - 1
         else:
             frame_index = int(self.anim_time * fps) % len(frames)
@@ -284,6 +264,7 @@ class Enemy(pygame.sprite.Sprite):
         self.anim_time = 0.0
         self.hit_flash = 0.0
         self.cooldown = 0.0
+        self.state_time = 0.0
         self.patrol_direction = 1
         self.patrol_origin = pygame.Vector2(x, y)
         self.ai_state = "patrol"
@@ -296,9 +277,11 @@ class Enemy(pygame.sprite.Sprite):
         self.health -= amount
         self.hit_flash = 0.15
         self.state = "hurt"
+        self.state_time = 0.0
         if self.health <= 0:
             self.alive = False
             self.state = "death"
+            self.state_time = 0.0
             self.death_timer = 0.45
             game.stats.score += 100
             game.stats.enemies_defeated += 1
@@ -310,11 +293,13 @@ class Enemy(pygame.sprite.Sprite):
 
     def update(self, dt, game):
         self.anim_time += dt
+        self.state_time += dt
         self.cooldown = max(0.0, self.cooldown - dt)
         self.hit_flash = max(0.0, self.hit_flash - dt)
         if not self.alive:
             self.death_timer -= dt
             return self.death_timer > 0
+        previous_state = self.state
         player = game.player
         delta = player.pos - self.pos
         distance = delta.length()
@@ -377,13 +362,20 @@ class Enemy(pygame.sprite.Sprite):
             self.patrol_direction *= -1
         if self.hit_flash > 0:
             self.state = "hurt"
+        if self.state != previous_state:
+            self.state_time = 0.0
         return True
 
     def draw(self, surface, camera):
-        image = actor_image(self.kind, self.state, int(self.anim_time * 8) % 4, self.facing).copy()
+        frames = enemy_frames(self.kind, self.state)
+        fps = {"idle": 6, "walk": 12, "attack": 14, "hurt": 12, "death": 10}.get(self.state, 10)
+        frame_index = min(int(self.state_time * fps), len(frames) - 1)
+        image = frames[frame_index].copy()
+        if self.facing < 0:
+            image = pygame.transform.flip(image, True, False)
         if self.hit_flash:
             image.set_alpha(155)
-        dest = image.get_rect(center=(round(self.rect.centerx - camera.x), round(self.rect.centery - camera.y)))
+        dest = image.get_rect(midbottom=(round(self.rect.centerx - camera.x), round(self.rect.bottom - camera.y)))
         surface.blit(image, dest)
         if self.alive and self.health < self.max_health:
             bar = pygame.Rect(dest.centerx - 15, dest.top + 2, 30, 4)

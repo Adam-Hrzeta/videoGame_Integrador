@@ -48,7 +48,7 @@ Desde el menú principal puedes ajustar volumen, resolución, distribución de c
 - `game/`: jugador, enemigos, mapas, interfaz, audio y estado global
 - `assets/maps/`: cinco mapas `.tmx` editables en Tiled
 - `assets/tilesets/`: atlas y definiciones Tiled para bosque, desierto, catacumbas, pantano y Umbral
-- `assets/sprites/player/`: hojas de animación del personaje
+- `assets/sprites/player/` y `assets/sprites/enemies/`: hojas de animación del jugador y los enemigos
 - `tools/build_maps.py`: reconstruye los atlas y los cinco mapas TMX
 - `tests/`: pruebas automáticas
 
@@ -56,7 +56,7 @@ Los mapas están hechos con el formato TMX de Tiled y se cargan en ejecución me
 
 ## Arte visual
 
-El jugador principal utiliza el personaje Hooded Blade con animaciones de reposo, carrera, ataque y salto. Sus hojas originales y metadatos están en `assets/sprites/player/hooded-blade/`; el arte se distribuye bajo CC0 y su licencia se incluye con los recursos. El ataque también representa visualmente el disparo. Cada nivel tiene un trazado, paleta y tileset propios; los atlas se generan desde las imágenes fuente incluidas en `assets/tilesets/source/`. El tileset Tiny Dungeon de Kenney se distribuye bajo licencia CC0; se incluye su licencia junto a las fuentes.
+El jugador utiliza el samurái, con animaciones de reposo, carrera, ataques, salto, daño y muerte. Los cinco tipos de enemigos tienen sprites animados propios: arquero esqueleto, mago de relámpago, guerrero esqueleto, lancero esqueleto y mago de fuego. Las hojas se encuentran en `assets/sprites/player/samurai/` y `assets/sprites/enemies/`; los archivos de licencia de Craftpix están en `assets/sprites/licenses/`. El ataque secundario del samurái representa visualmente el disparo. Cada nivel tiene un trazado, paleta y tileset propios; los atlas se generan desde las imágenes fuente incluidas en `assets/tilesets/source/`. El tileset Tiny Dungeon de Kenney se distribuye bajo licencia CC0; se incluye su licencia junto a las fuentes.
 
 ## Sonido
 

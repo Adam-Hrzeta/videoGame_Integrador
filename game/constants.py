@@ -17,11 +17,11 @@ LEVELS = (
 )
 
 ENEMY_DATA = {
-    "slime": {"name": "Baba", "color": (91, 205, 119), "hp": 2, "speed": 74, "damage": 1},
-    "wraith": {"name": "Espectro", "color": (106, 192, 230), "hp": 2, "speed": 96, "damage": 1},
-    "skeleton": {"name": "Esqueleto", "color": (230, 219, 180), "hp": 3, "speed": 70, "damage": 1},
-    "brute": {"name": "Bruto", "color": (211, 105, 78), "hp": 5, "speed": 52, "damage": 2},
-    "mage": {"name": "Hechicero", "color": (180, 119, 234), "hp": 3, "speed": 56, "damage": 1},
+    "slime": {"name": "Arquero esqueleto", "color": (91, 205, 119), "hp": 2, "speed": 74, "damage": 1},
+    "wraith": {"name": "Mago de relámpago", "color": (106, 192, 230), "hp": 2, "speed": 96, "damage": 1},
+    "skeleton": {"name": "Guerrero esqueleto", "color": (230, 219, 180), "hp": 3, "speed": 70, "damage": 1},
+    "brute": {"name": "Lancero esqueleto", "color": (211, 105, 78), "hp": 5, "speed": 52, "damage": 2},
+    "mage": {"name": "Mago de fuego", "color": (180, 119, 234), "hp": 3, "speed": 56, "damage": 1},
 }
 
 ITEM_DATA = {

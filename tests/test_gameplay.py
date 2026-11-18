@@ -8,7 +8,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import pygame
 
 from game.constants import ENEMY_DATA, ITEM_DATA, LEVELS
-from game.entities import PLAYER_FRAME_SIZE, Pickup, player_frames
+from game.entities import ENEMY_FRAME_SIZE, PLAYER_FRAME_SIZE, Pickup, enemy_frames, player_frames
 from game.gameplay import Game
 from game.maps import LevelMap
 from game.audio import AudioManager
@@ -82,13 +82,25 @@ class GameRequirementsTests(unittest.TestCase):
                         queue.append(next_cell)
             self.assertIn(target, reached, "El nivel %d no conecta el inicio con la puerta." % number)
 
-    def test_player_uses_hooded_blade_animations(self):
-        self.assertEqual(len(player_frames("idle")), 32)
-        self.assertEqual(len(player_frames("walk")), 24)
-        self.assertEqual(len(player_frames("attack")), 32)
-        self.assertEqual(len(player_frames("shoot")), 32)
-        self.assertEqual(len(player_frames("jump")), 7)
+    def test_player_uses_samurai_animations_for_all_states(self):
+        self.assertEqual(len(player_frames("idle")), 6)
+        self.assertEqual(len(player_frames("walk")), 8)
+        self.assertEqual(len(player_frames("attack")), 4)
+        self.assertEqual(len(player_frames("shoot")), 5)
+        self.assertEqual(len(player_frames("jump")), 9)
+        self.assertGreater(len(player_frames("hurt")), 1)
+        self.assertGreater(len(player_frames("death")), 1)
         self.assertEqual(player_frames("walk")[0].get_size(), PLAYER_FRAME_SIZE)
+
+    def test_each_enemy_type_uses_its_own_animated_sprite(self):
+        idle_frames = []
+        for kind in ENEMY_DATA:
+            for state in ("idle", "walk", "attack", "hurt", "death"):
+                frames = enemy_frames(kind, state)
+                self.assertGreater(len(frames), 1, "%s has no %s animation" % (kind, state))
+                self.assertEqual(frames[0].get_size(), ENEMY_FRAME_SIZE)
+            idle_frames.append(pygame.image.tostring(enemy_frames(kind, "idle")[0], "RGBA"))
+        self.assertEqual(len(set(idle_frames)), len(ENEMY_DATA))
 
     def test_jump_action_plays_the_jump_animation(self):
         game = Game(SilentAudio())
