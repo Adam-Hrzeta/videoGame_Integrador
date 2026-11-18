@@ -7,11 +7,12 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
 import pygame
 
-from game.constants import ENEMY_DATA, LEVELS
-from game.entities import PLAYER_FRAME_SIZE, player_frames
+from game.constants import ENEMY_DATA, ITEM_DATA, LEVELS
+from game.entities import PLAYER_FRAME_SIZE, Pickup, player_frames
 from game.gameplay import Game
 from game.maps import LevelMap
 from game.audio import AudioManager
+from game.ui import draw_hud
 
 
 class SilentAudio:
@@ -94,6 +95,21 @@ class GameRequirementsTests(unittest.TestCase):
         game.update(1 / 60, pygame.key.get_pressed(), {"jump": True})
         self.assertEqual(game.player.state, "jump")
         self.assertGreater(game.player.jump_timer, 0)
+
+    def test_hud_renders_health_and_resource_panel_at_minimum_resolution(self):
+        game = Game(SilentAudio())
+        surface = pygame.Surface((800, 600))
+        draw_hud(surface, game)
+        self.assertNotEqual(surface.get_at((30, 100)), (0, 0, 0, 255))
+
+    def test_world_pickups_have_distinct_icons_and_nearby_labels(self):
+        rendered_items = []
+        for item in ITEM_DATA:
+            surface = pygame.Surface((180, 120))
+            pickup = Pickup(pygame.Rect(70, 60, 20, 20), item)
+            pickup.draw(surface, pygame.Vector2(), show_label=True)
+            rendered_items.append(pygame.image.tostring(surface, "RGB"))
+        self.assertEqual(len(set(rendered_items)), len(ITEM_DATA))
 
     def test_key_door_requires_cleared_level_and_consumes_key(self):
         game = Game(SilentAudio())

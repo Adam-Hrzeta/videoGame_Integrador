@@ -1,6 +1,7 @@
 import pygame
 
 from .constants import ENEMY_DATA, ITEM_DATA, LEVELS
+from .item_icons import draw_item_icon
 
 BG = (14, 18, 27)
 PANEL = (22, 29, 42)
@@ -24,30 +25,70 @@ def draw_text(surface, text, x, y, size=22, color=TEXT, bold=False, center=False
     return rect
 
 
+def draw_text_right(surface, text, x, y, size=22, color=TEXT, bold=False):
+    image = font(size, bold).render(str(text), True, color)
+    rect = image.get_rect(topright=(x, y))
+    surface.blit(image, rect)
+    return rect
+
+
+def draw_heart(surface, center, color):
+    x, y = center
+    pygame.draw.circle(surface, color, (x - 4, y - 2), 5)
+    pygame.draw.circle(surface, color, (x + 4, y - 2), 5)
+    pygame.draw.polygon(surface, color, ((x - 9, y), (x + 9, y), (x, y + 10)))
+
+
 def draw_hud(surface, game):
     width = surface.get_width()
-    pygame.draw.rect(surface, (13, 17, 26, 235), (0, 0, width, 78))
-    pygame.draw.line(surface, (65, 98, 104), (0, 77), (width, 77), 1)
-    draw_text(surface, "VIDA", 18, 9, 14, MUTED, True)
+    pygame.draw.rect(surface, (13, 17, 26), (0, 0, width, 74))
+    pygame.draw.line(surface, (65, 98, 104), (0, 73), (width, 73), 1)
+    pygame.draw.line(surface, (114, 226, 190), (0, 73), (width, 73), 1)
+    draw_text(surface, "SALUD", 18, 7, 12, MUTED, True)
     for i in range(game.player.max_health):
-        color = (237, 98, 111) if i < game.player.health else (76, 80, 90)
-        pygame.draw.rect(surface, color, (18 + i * 19, 34, 14, 12), border_radius=4)
-    draw_text(surface, "Vidas %d" % game.player.lives, 155, 29, 17)
-    draw_text(surface, "Puntos %06d" % game.stats.score, 245, 29, 17, (242, 216, 145))
-    draw_text(surface, "Enemigos %d" % sum(e.alive for e in game.enemies), 400, 29, 17)
-    draw_text(surface, "Zona %d/5" % game.level, width - 122, 29, 17, ACCENT, True)
-    labels = tuple(ITEM_DATA)
-    x0 = max(18, width - 4 * 72 - 24)
-    for index, name in enumerate(labels):
-        rect = pygame.Rect(x0 + index * 72, 86, 62, 54)
-        pygame.draw.rect(surface, (19, 24, 35), rect, border_radius=7)
-        pygame.draw.rect(surface, ACCENT if index == game.player.selected else (65, 75, 88), rect, 2, border_radius=7)
-        pygame.draw.circle(surface, ITEM_DATA[name]["color"], (rect.centerx, rect.y + 17), 6)
-        draw_text(surface, "%d" % game.player.inventory[name], rect.centerx, rect.y + 39, 15, TEXT, True, True)
-        draw_text(surface, str(index + 1), rect.x + 5, rect.y + 2, 11, MUTED)
-    draw_text(surface, "Munición %d" % game.player.ammo, 18, 60, 15, (240, 198, 104))
+        color = (245, 100, 113) if i < game.player.health else (65, 73, 83)
+        draw_heart(surface, (24 + i * 19, 33), color)
+    draw_text(surface, "%d/%d" % (game.player.health, game.player.max_health),
+              119, 26, 15, TEXT, True)
+    health_bar = pygame.Rect(18, 51, 112, 7)
+    pygame.draw.rect(surface, (45, 53, 65), health_bar, border_radius=4)
+    health_ratio = max(0.0, min(1.0, game.player.health / game.player.max_health))
+    fill_width = round(health_bar.width * health_ratio)
+    if fill_width:
+        pygame.draw.rect(surface, (226, 91, 105),
+                         (health_bar.x, health_bar.y, fill_width, health_bar.height), border_radius=4)
+
+    draw_text(surface, "VIDAS", 163, 13, 11, MUTED, True)
+    draw_text(surface, str(game.player.lives), 163, 32, 19, TEXT, True)
+    draw_text(surface, "PUNTAJE", 222, 13, 11, MUTED, True)
+    draw_text(surface, "%06d" % game.stats.score, 222, 32, 17, (242, 216, 145), True)
+    draw_text(surface, "ENEMIGOS", 347, 13, 11, MUTED, True)
+    draw_text(surface, str(sum(e.alive for e in game.enemies)), 347, 32, 17, TEXT, True)
+    draw_text(surface, "DISPAROS", 454, 13, 11, MUTED, True)
+    draw_text(surface, str(game.player.ammo), 454, 32, 17, (240, 198, 104), True)
+    draw_text_right(surface, "ZONA %d/5" % game.level, width - 18, 25, 16, ACCENT, True)
     if game.player.power_timer > 0:
-        draw_text(surface, "Esencia %.0fs" % game.player.power_timer, 150, 60, 15, (106, 225, 233))
+        draw_text_right(surface, "ESENCIA ACTIVA %.0fs" % game.player.power_timer,
+                        width - 18, 49, 11, (106, 225, 233), True)
+
+    panel = pygame.Rect(14, 86, 218, 198)
+    pygame.draw.rect(surface, (13, 19, 28), panel, border_radius=10)
+    pygame.draw.rect(surface, (62, 79, 91), panel, 1, border_radius=10)
+    draw_text(surface, "RECURSOS", panel.x + 12, panel.y + 8, 12, MUTED, True)
+    pygame.draw.line(surface, (48, 61, 72), (panel.x + 10, panel.y + 29),
+                     (panel.right - 10, panel.y + 29), 1)
+    for index, name in enumerate(ITEM_DATA):
+        row = pygame.Rect(panel.x + 8, panel.y + 35 + index * 38, panel.width - 16, 34)
+        selected = index == game.player.selected
+        pygame.draw.rect(surface, (29, 46, 49) if selected else (18, 25, 36),
+                         row, border_radius=6)
+        pygame.draw.rect(surface, ACCENT if selected else (40, 51, 63),
+                         row, 1, border_radius=6)
+        draw_text(surface, str(index + 1), row.x + 5, row.y + 10, 10, MUTED)
+        draw_item_icon(surface, name, (row.x + 31, row.centery))
+        draw_text(surface, ITEM_DATA[name]["name"], row.x + 51, row.y + 8, 13, TEXT, True)
+        draw_text(surface, "x%d" % game.player.inventory[name],
+                  row.right - 12, row.centery, 13, ITEM_DATA[name]["color"], True, True)
     if game.notice_timer > 0:
         notice = font(17, True).render(game.notice_text, True, TEXT)
         rect = notice.get_rect(center=(width // 2, surface.get_height() - 34))
@@ -65,7 +106,7 @@ def draw_inventory(surface, game):
         rect = pygame.Rect(width // 2 - 218 + index * 110, height // 2 - 52, 98, 105)
         pygame.draw.rect(surface, PANEL, rect, border_radius=10)
         pygame.draw.rect(surface, ACCENT if index == game.player.selected else (76, 87, 100), rect, 2, border_radius=10)
-        pygame.draw.circle(surface, ITEM_DATA[name]["color"], (rect.centerx, rect.y + 30), 12)
+        draw_item_icon(surface, name, (rect.centerx, rect.y + 30))
         draw_text(surface, ITEM_DATA[name]["name"], rect.centerx, rect.y + 57, 14, TEXT, True, True)
         draw_text(surface, "x%d" % game.player.inventory[name], rect.centerx, rect.y + 82, 16, MUTED, False, True)
     draw_text(surface, "1–4 seleccionar  •  Q usar  •  X descartar  •  Tab cerrar", width // 2, height // 2 + 95, 16, MUTED, False, True)

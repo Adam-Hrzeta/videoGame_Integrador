@@ -123,7 +123,7 @@ class Game:
                 self.player.inventory[drop.item] = min(ITEM_DATA[drop.item]["stack"], self.player.inventory[drop.item] + drop.amount)
                 self.drops.remove(drop)
                 self.audio.play("pickup")
-                self.notice("Recogiste munición.", 1.5)
+                self.notice("Recogiste: %s." % ITEM_DATA[drop.item]["name"], 1.5)
 
     def drop_selected(self):
         item = tuple(ITEM_DATA)[self.player.selected]
@@ -203,9 +203,11 @@ class Game:
         for switch in self.switches:
             switch.draw(surface, camera)
         for pickup in self.pickups:
-            pickup.draw(surface, camera)
+            nearby = self.player.pos.distance_to(pickup.rect.center) < 132
+            pickup.draw(surface, camera, nearby)
         for drop in self.drops:
-            drop.draw(surface, camera)
+            nearby = self.player.pos.distance_to(drop.rect.center) < 132
+            drop.draw(surface, camera, nearby)
         for projectile in self.projectiles:
             projectile.draw(surface, camera)
         for enemy in self.enemies:

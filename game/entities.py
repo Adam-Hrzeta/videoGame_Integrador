@@ -6,6 +6,7 @@ from pathlib import Path
 import pygame
 
 from .constants import ENEMY_DATA, ITEM_DATA, TILE_SIZE
+from .item_icons import draw_item_icon, draw_item_label
 
 ACTOR_SIZE = 48
 PLAYER_FRAME_SIZE = (96, 96)
@@ -398,12 +399,15 @@ class Drop:
         self.amount = amount
         self.phase = 0.0
 
-    def draw(self, surface, camera):
+    def draw(self, surface, camera, show_label=False):
         self.phase += 0.05
         x, y = self.rect.centerx - camera.x, self.rect.centery - camera.y
         bob = round(math.sin(self.phase * 4) * 2)
-        pygame.draw.circle(surface, ITEM_DATA[self.item]["color"], (round(x), round(y + bob)), 9)
-        pygame.draw.circle(surface, (250, 245, 222), (round(x), round(y + bob)), 3)
+        center = (round(x), round(y + bob))
+        pygame.draw.ellipse(surface, (14, 18, 24), (center[0] - 12, center[1] + 9, 24, 7))
+        draw_item_icon(surface, self.item, center)
+        if show_label:
+            draw_item_label(surface, self.item, center)
 
 
 class Pickup:
@@ -413,13 +417,14 @@ class Pickup:
         self.amount = int(amount)
         self.phase = 0.0
 
-    def draw(self, surface, camera):
+    def draw(self, surface, camera, show_label=False):
         self.phase += 0.05
         bob = round(math.sin(self.phase * 4) * 2)
         center = (round(self.rect.centerx - camera.x), round(self.rect.centery - camera.y + bob))
-        pygame.draw.circle(surface, (20, 24, 30), (center[0], center[1] + 4), 10)
-        pygame.draw.circle(surface, ITEM_DATA[self.item]["color"], center, 8)
-        pygame.draw.circle(surface, (255, 247, 221), center, 3)
+        pygame.draw.ellipse(surface, (14, 18, 24), (center[0] - 12, center[1] + 9, 24, 7))
+        draw_item_icon(surface, self.item, center)
+        if show_label:
+            draw_item_label(surface, self.item, center)
 
 
 class Switch:
