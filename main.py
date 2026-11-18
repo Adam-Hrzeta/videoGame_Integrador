@@ -97,7 +97,7 @@ def render_menu(screen, options, selected, title, subtitle=None):
         pygame.draw.rect(screen, ACCENT if index == selected else (51, 65, 77), rect, 2, border_radius=9)
         draw_text(screen, option, rect.centerx, rect.centery, 19, TEXT if index == selected else MUTED, index == selected, True)
         rects.append(rect)
-    draw_text(screen, "WASD mover   ·   Espacio atacar   ·   F disparar   ·   Esc pausa",
+    draw_text(screen, "WASD mover   ·   Espacio atacar   ·   J saltar   ·   F disparar   ·   Esc pausa",
               width // 2, height - 31, 14, MUTED, False, True)
     return rects
 
@@ -243,6 +243,8 @@ def main():
                         game.player.selected = event.key - pygame.K_1
                     elif event.key == pygame.K_SPACE:
                         actions["attack"] = True
+                    elif event.key == pygame.K_j:
+                        actions["jump"] = True
                     elif event.key == pygame.K_f:
                         actions["shoot"] = True
                     elif event.key == pygame.K_e:

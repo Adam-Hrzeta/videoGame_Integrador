@@ -1,3 +1,4 @@
+import json
 import math
 from functools import lru_cache
 from pathlib import Path
@@ -7,28 +8,33 @@ import pygame
 from .constants import ENEMY_DATA, ITEM_DATA, TILE_SIZE
 
 ACTOR_SIZE = 48
-PLAYER_FRAMES = (100, 64)
-PLAYER_ASSETS = Path(__file__).resolve().parents[1] / "assets" / "sprites" / "player"
+PLAYER_FRAME_SIZE = (96, 96)
+PLAYER_ASSETS = Path(__file__).resolve().parents[1] / "assets" / "sprites" / "player" / "hooded-blade"
 PLAYER_ANIMATIONS = {
-    "idle": ("player.png", 7),
-    "walk": ("Walking_KG_2.png", 7),
-    "attack": ("Attack_KG_1.png", 6),
-    "shoot": ("Attack_KG_3.png", 9),
-    "hurt": ("player.png", 7),
-    "death": ("Dying_KG_1.png", 5),
+    "idle": "hooded-blade-idle",
+    "walk": "hooded-blade-run",
+    "attack": "hooded-blade-attack",
+    "shoot": "hooded-blade-attack",
+    "jump": "hooded-blade-jump",
+    "hurt": "hooded-blade-idle",
+    "death": "hooded-blade-jump",
 }
 
 
 @lru_cache(maxsize=8)
 def player_frames(state):
-    filename, frame_count = PLAYER_ANIMATIONS.get(state, PLAYER_ANIMATIONS["idle"])
-    sheet = pygame.image.load(str(PLAYER_ASSETS / filename)).convert_alpha()
-    frame_width, frame_height = PLAYER_FRAMES
-    if sheet.get_size() != (frame_width * frame_count, frame_height):
-        raise ValueError("La hoja de animación del jugador tiene dimensiones inesperadas: %s" % filename)
+    name = PLAYER_ANIMATIONS.get(state, PLAYER_ANIMATIONS["idle"])
+    with (PLAYER_ASSETS / (name + ".json")).open(encoding="utf-8") as animation_file:
+        metadata = json.load(animation_file)
+    sheet = pygame.image.load(str(PLAYER_ASSETS / (name + ".png"))).convert_alpha()
+    if sheet.get_size() != (metadata["meta"]["size"]["w"], metadata["meta"]["size"]["h"]):
+        raise ValueError("La hoja de animación del jugador tiene dimensiones inesperadas: %s.png" % name)
     return tuple(
-        sheet.subsurface((index * frame_width, 0, frame_width, frame_height)).copy()
-        for index in range(frame_count)
+        pygame.transform.smoothscale(
+            sheet.subsurface((frame["x"], frame["y"], frame["w"], frame["h"])),
+            PLAYER_FRAME_SIZE,
+        )
+        for _, frame in sorted(metadata["frames"].items(), key=lambda item: int(item[0]))
     )
 
 
@@ -119,6 +125,8 @@ class Player(pygame.sprite.Sprite):
         self.facing = 1
         self.state = "idle"
         self.anim_time = 0.0
+        self.jump_timer = 0.0
+        self.jump_cooldown = 0.0
         self.health = 5
         self.max_health = 5
         self.lives = 3
@@ -176,6 +184,12 @@ class Player(pygame.sprite.Sprite):
         game.projectiles.append(Projectile(self.rect.centerx + self.facing * 14, self.rect.centery, (self.facing, 0), True, 2))
         game.audio.play("shot")
 
+    def jump(self):
+        if self.jump_cooldown > 0:
+            return
+        self.jump_timer = 0.45
+        self.jump_cooldown = 0.7
+
     def take_damage(self, amount, game):
         if self.invulnerable > 0:
             return
@@ -225,16 +239,25 @@ class Player(pygame.sprite.Sprite):
 
     def draw(self, surface, camera):
         frames = player_frames(self.state)
-        fps = 12 if self.state == "walk" else 24
-        frame_index = 0 if self.state in ("idle", "hurt") else int(self.anim_time * fps) % len(frames)
+        fps = {"idle": 4, "walk": 14, "attack": 20, "shoot": 20, "jump": 14}.get(self.state, 12)
+        if self.state == "hurt":
+            frame_index = 0
+        elif self.state == "death":
+            frame_index = len(frames) - 1
+        else:
+            frame_index = int(self.anim_time * fps) % len(frames)
         image = frames[frame_index].copy()
         if self.state == "hurt":
             image.fill((255, 128, 128, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        elif self.state == "death":
+            image.fill((150, 150, 150, 255), special_flags=pygame.BLEND_RGBA_MULT)
         if self.facing < 0:
             image = pygame.transform.flip(image, True, False)
+        jump_progress = 1 - self.jump_timer / 0.45 if self.state == "jump" else 0
+        jump_offset = round(math.sin(jump_progress * math.pi) * 18)
         dest = image.get_rect(midbottom=(
             round(self.rect.centerx - camera.x),
-            round(self.rect.bottom - camera.y),
+            round(self.rect.bottom - camera.y - jump_offset),
         ))
         if self.invulnerable > 0 and int(self.anim_time * 18) % 2:
             image.set_alpha(110)

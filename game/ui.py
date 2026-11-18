@@ -112,7 +112,7 @@ def draw_tutorial(surface, game):
     if game.level > 2 or game.elapsed > 38:
         return
     if game.level == 1:
-        text = "WASD mover  •  Espacio atacar  •  F disparar  •  E interactuar"
+        text = "WASD mover  •  Espacio atacar  •  J saltar  •  F disparar  •  E interactuar"
     else:
         text = "Q usa el objeto seleccionado  •  1–4 o rueda: cambiar objeto  •  Esc: pausa"
     rect = pygame.Rect(18, surface.get_height() - 84, min(surface.get_width() - 36, 640), 34)

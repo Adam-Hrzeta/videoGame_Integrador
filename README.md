@@ -25,6 +25,7 @@ En Windows también puedes ejecutar `iniciar.bat`.
 | --- | --- |
 | Moverse | WASD o flechas |
 | Atacar | Espacio |
+| Saltar | J |
 | Disparar | F |
 | Interactuar / abrir puerta | E |
 | Usar el objeto seleccionado | Q |
@@ -55,7 +56,7 @@ Los mapas están hechos con el formato TMX de Tiled y se cargan en ejecución me
 
 ## Arte visual
 
-El jugador utiliza las hojas de sprites de `JUEGO2` para caminar, atacar, disparar, recibir daño y morir. Cada nivel tiene un trazado, paleta y tileset propios; los atlas se generan desde las imágenes fuente incluidas en `assets/tilesets/source/`. El tileset Tiny Dungeon de Kenney se distribuye bajo licencia CC0; se incluye su licencia junto a las fuentes.
+El jugador principal utiliza el personaje Hooded Blade con animaciones de reposo, carrera, ataque y salto. Sus hojas originales y metadatos están en `assets/sprites/player/hooded-blade/`; el arte se distribuye bajo CC0 y su licencia se incluye con los recursos. El ataque también representa visualmente el disparo. Cada nivel tiene un trazado, paleta y tileset propios; los atlas se generan desde las imágenes fuente incluidas en `assets/tilesets/source/`. El tileset Tiny Dungeon de Kenney se distribuye bajo licencia CC0; se incluye su licencia junto a las fuentes.
 
 ## Sonido
 

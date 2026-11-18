@@ -154,6 +154,8 @@ class Game:
         self.player.shoot_timer = max(0.0, self.player.shoot_timer - dt)
         self.player.attack_cooldown = max(0.0, self.player.attack_cooldown - dt)
         self.player.shoot_cooldown = max(0.0, self.player.shoot_cooldown - dt)
+        self.player.jump_timer = max(0.0, self.player.jump_timer - dt)
+        self.player.jump_cooldown = max(0.0, self.player.jump_cooldown - dt)
         self.player.power_timer = max(0.0, self.player.power_timer - dt)
 
         if control_scheme == "Flechas":
@@ -169,8 +171,8 @@ class Game:
         if move.x:
             self.player.facing = 1 if move.x > 0 else -1
         self.player.move(move, dt, self)
-        if self.player.invulnerable <= 0:
-            self.player.state = "attack" if self.player.attack_timer else "shoot" if self.player.shoot_timer else "walk" if move.length_squared() else "idle"
+        if actions.get("jump"):
+            self.player.jump()
         if actions.get("attack"):
             self.player.attack(self)
         if actions.get("shoot"):
@@ -181,6 +183,14 @@ class Game:
             self.player.use_item(self)
         if actions.get("drop"):
             self.drop_selected()
+        if self.player.invulnerable <= 0:
+            self.player.state = (
+                "attack" if self.player.attack_timer else
+                "shoot" if self.player.shoot_timer else
+                "jump" if self.player.jump_timer else
+                "walk" if move.length_squared() else
+                "idle"
+            )
 
         self.enemies = [enemy for enemy in self.enemies if enemy.update(dt, self)]
         self.stats.enemies_remaining = sum(enemy.alive for enemy in self.enemies)
